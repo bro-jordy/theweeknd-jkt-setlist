@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>The Weeknd — Jakarta</title>
+<style>
+  :root{
+    --bg:#0a0a0c;
+    --surface:#151519;
+    --surface2:#1d1d23;
+    --border:#2a2a31;
+    --text:#f2f0ee;
+    --text-dim:#9a98a3;
+    --accent:#ff3535;
+    --accent-dim:#7a1e1e;
+    --must:#ff3535;
+    --should:#f5c542;
+    --nice:#7c7c86;
+    --know:#3ddc84;
+    --safe-t: env(safe-area-inset-top, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-l: env(safe-area-inset-left, 0px);
+    --safe-r: env(safe-area-inset-right, 0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    height:100%;overscroll-behavior-y:none;
+  }
+  body{
+    padding-top:var(--safe-t);
+    padding-bottom:var(--safe-b);
+    padding-left:var(--safe-l);
+    padding-right:var(--safe-r);
+  }
+  button{font-family:inherit;}
+  #app{max-width:640px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+  /* ---------- HEADER ---------- */
+  header{padding:18px 16px 10px;position:sticky;top:0;background:linear-gradient(var(--bg) 85%, transparent);z-index:5;}
+  header .brand{display:flex;justify-content:space-between;align-items:flex-start;}
+  header h1{margin:0;font-size:22px;letter-spacing:2px;font-weight:800;}
+  header .sub{margin:2px 0 0;font-size:13px;letter-spacing:3px;color:var(--accent);font-weight:700;}
+  .offline-badge{font-size:11px;color:var(--know);background:#0f2419;border:1px solid #1d4a30;padding:4px 8px;border-radius:20px;white-space:nowrap;margin-top:2px;}
+
+  .search-wrap{margin-top:14px;position:relative;}
+  #search{
+    width:100%;padding:13px 14px 13px 40px;border-radius:12px;border:1px solid var(--border);
+    background:var(--surface);color:var(--text);font-size:16px;outline:none;
+  }
+  #search:focus{border-color:var(--accent);}
+  .search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;opacity:.6;pointer-events:none;}
+
+  .filters{display:flex;gap:8px;overflow-x:auto;padding:12px 16px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .filters::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto;padding:9px 14px;border-radius:20px;background:var(--surface);
+    border:1px solid var(--border);color:var(--text-dim);font-size:13px;font-weight:600;white-space:nowrap;
+  }
+  .chip.active{background:var(--text);color:#000;border-color:var(--text);}
+  .export-btn{width:100%;padding:13px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:14px;font-weight:700;}
+  .export-btn:active{background:var(--accent-dim);}
+
+  /* ---------- LIST ---------- */
+  #list{flex:1;padding:8px 10px 30px;}
+  .song-row{
+    display:flex;align-items:center;gap:12px;padding:14px 10px;border-bottom:1px solid var(--border);
+  }
+  .song-row .num{width:26px;flex:0 0 auto;color:var(--text-dim);font-size:13px;font-weight:700;}
+  .song-row .info{flex:1;min-width:0;}
+  .song-row .title{font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .song-row .meta{font-size:12px;color:var(--text-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .song-row .badges{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:0 0 auto;}
+  .tag{font-size:10px;font-weight:800;padding:3px 7px;border-radius:6px;letter-spacing:.3px;white-space:nowrap;}
+  .tag.must{background:#3a1010;color:var(--must);}
+  .tag.should{background:#3a2f0a;color:var(--should);}
+  .tag.nice{background:#242429;color:var(--nice);}
+  .status-btn{font-size:16px;padding:2px 4px;border-radius:8px;background:transparent;border:none;color:var(--text);}
+  .empty-state{text-align:center;color:var(--text-dim);padding:60px 20px;font-size:14px;}
+  .section-header{padding:18px 10px 6px;font-size:12px;font-weight:800;letter-spacing:1px;color:var(--accent);text-transform:uppercase;}
+  footer.about{padding:10px 20px 30px;font-size:11px;color:var(--text-dim);line-height:1.6;text-align:center;}
+
+  /* ---------- PLAYER (fullscreen lyrics view) ---------- */
+  #overlay{
+    display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column;
+    padding-top:calc(var(--safe-t) + 10px);padding-bottom:calc(var(--safe-b) + 10px);
+    padding-left:calc(var(--safe-l) + 16px);padding-right:calc(var(--safe-r) + 16px);
+  }
+  .ov-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;}
+  .ov-back{background:none;border:none;color:#fff;font-size:15px;font-weight:700;padding:8px 4px;line-height:1;flex:0 0 auto;}
+  .ov-heading{flex:1;min-width:0;text-align:center;}
+  .ov-heading .ov-order{color:#666;font-size:11px;font-weight:800;letter-spacing:2px;}
+  .ov-heading .ov-title{font-size:16px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ov-edit-btn{background:none;border:none;color:#fff;font-size:18px;padding:8px;flex:0 0 auto;}
+  .ov-wakelock-note{font-size:10px;color:#666;text-align:center;padding:2px 10px 0;}
+  .ov-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;padding:12px 4px;}
+  .ov-artist{font-size:14px;color:#999;text-align:center;}
+  .ov-status{align-self:center;background:#1d1d23;border:1px solid #33333c;color:#fff;font-size:15px;font-weight:700;padding:9px 16px;border-radius:12px;}
+  .ov-lyrics{
+    background:#121214;border:1px solid #2a2a31;border-radius:16px;padding:20px;
+    flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  }
+  .ov-lyrics p{margin:0;font-size:26px;line-height:1.7;color:#fff;white-space:pre-wrap;font-weight:600;}
+  .ov-lyrics.empty p{color:#666;font-size:17px;font-weight:400;font-style:italic;}
+  .ov-lyrics-edit{
+    flex:1;min-height:0;width:100%;background:#121214;border:1px solid var(--accent);border-radius:16px;
+    padding:20px;color:#fff;font-size:22px;line-height:1.6;font-weight:600;font-family:inherit;
+    resize:none;outline:none;
+  }
+  .ov-edit-hint{font-size:12px;color:var(--text-dim);text-align:center;}
+  .ov-edit-link{color:var(--accent);font-size:13px;text-align:center;text-decoration:none;font-weight:700;}
+  .ov-nav{display:flex;gap:12px;padding-top:10px;}
+  .ov-nav button{flex:1;padding:22px 10px;border-radius:16px;border:none;background:#1d1d23;color:#fff;font-size:18px;font-weight:800;}
+  .ov-nav button:active{background:var(--accent-dim);}
+  .ov-nav button:disabled{opacity:.25;}
+  .ov-hint{text-align:center;color:#555;font-size:11px;padding-top:4px;}
+
+  a{color:var(--accent);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="brand">
+      <div>
+        <h1>THE WEEKND</h1>
+        <p class="sub">JAKARTA</p>
+      </div>
+      <div class="offline-badge">🟢 OFFLINE READY</div>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input id="search" type="text" placeholder="Search song, feat. artist, priority..." autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+  </header>
+
+  <div class="filters" id="filters">
+    <button class="chip active" data-filter="all">ALL</button>
+    <button class="chip" data-filter="must">🔥 MUST KNOW</button>
+    <button class="chip" data-filter="played">✓ SUDAH DIPUTAR</button>
+  </div>
+
+  <div id="list"></div>
+
+  <div style="padding:4px 16px 6px;">
+    <button id="exportBtn" class="export-btn">💾 Simpan ke File (buat pindah HP)</button>
+  </div>
+
+  <footer class="about">
+    Setlist referensi: The Weeknd, After Hours Til Dawn Tour — Belluna Dome, Tokorozawa, Jepang (19 &amp; 20 Sept 2026). Bisa berbeda saat show Jakarta.
+  </footer>
+
+</div>
+
+<!-- Fullscreen lyrics player -->
+<div id="overlay">
+  <div class="ov-top">
+    <button class="ov-back" id="ovClose">← Search</button>
+    <div class="ov-heading">
+      <div class="ov-order" id="ovOrder"></div>
+      <div class="ov-title" id="ovTitle"></div>
+    </div>
+    <button class="ov-edit-btn" id="ovEditBtn">✏️</button>
+  </div>
+  <div class="ov-artist" id="ovArtist"></div>
+  <div class="ov-wakelock-note" id="ovWakeNote"></div>
+  <div class="ov-body" id="ovBody"></div>
+  <div class="ov-nav">
+    <button id="ovPrev">← PREVIOUS</button>
+    <button id="ovNext">NEXT →</button>
+  </div>
+  <div class="ov-hint">swipe left / right to navigate</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* =====================================================
+   SONG DATA
+   Reference: The Weeknd — After Hours Til Dawn Tour
+   Belluna Dome, Tokorozawa, Japan — Sep 19 & 20, 2026
+   (source: setlist.fm). No full lyrics included.
+   appearance: "both" | "day1" | "day2"
+   priority: "must" | "should" | "nice"
+===================================================== */
+const SONGS = [
+  {id:1, order:1, title:"Baptized in Fear", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Pembuka (Hurry Up Tomorrow Era)",
+   cue:"Opening track from the Hurry Up Tomorrow era, used as the show's cold-open.",
+   keyMoment:"This is literally how the night starts — dark, tense build with the first big visual/lighting cue. Be ready from the first second.",
+   tags:["opener","hurry up tomorrow","intro"]},
+
+  {id:2, order:2, title:"Open Hearts", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Pembuka (Hurry Up Tomorrow Era)",
+   cue:"Mid-tempo dance groove, early energy-setter right after the opener.",
+   keyMoment:"Steady beat from the top, builds into a hook-driven chorus — good early energy.",
+   tags:["hurry up tomorrow"]},
+
+  {id:3, order:3, title:"Wake Me Up", artist:"The Weeknd", priority:"should", appearance:"both", section:"Bagian Pembuka (Hurry Up Tomorrow Era)",
+   cue:"Uptempo synth-pop energy with a retro 80s feel.",
+   keyMoment:"Quick build straight into a driving, bouncy chorus.",
+   tags:["uptempo","hurry up tomorrow"]},
+
+  {id:4, order:4, title:"After Hours", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Pembuka (Hurry Up Tomorrow Era)",
+   cue:"Title track — dark brooding synths that build into a huge chorus swell.",
+   keyMoment:"Slow atmospheric intro → big emotional chorus → iconic dramatic outro.",
+   tags:["title track","iconic"]},
+
+  {id:5, order:5, title:"Starboy", artist:"The Weeknd, Daft Punk", priority:"must", appearance:"both", section:"Bagian Pembuka (Hurry Up Tomorrow Era)",
+   cue:"That bass-driven intro hook everyone recognizes in the first second.",
+   keyMoment:"Instant recognition intro → verses → massive full-crowd singalong chorus.",
+   tags:["hit","daft punk","singalong"]},
+
+  {id:6, order:6, title:"Heartless", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Pembuka (Hurry Up Tomorrow Era)",
+   cue:"Trap-influenced beat, aggressive energy shift after Starboy.",
+   keyMoment:"Hard-hitting verses into a chanted hook — good jump-along moment.",
+   tags:["hit","trap","hype"]},
+
+  {id:7, order:7, title:"Faith", artist:"The Weeknd", priority:"should", appearance:"day2", section:"Bagian Pembuka (Hurry Up Tomorrow Era)",
+   cue:"Dark, spacious production with a haunting extended outro.",
+   keyMoment:"Only added starting the second Japan night — slow build verse into an intense chorus with a long atmospheric outro. May or may not show up in Jakarta.",
+   tags:["deep cut","day 2 only","added night 2"]},
+
+  {id:8, order:8, title:"Cry For Me", artist:"The Weeknd", priority:"should", appearance:"both", section:"Bagian Pembuka (Hurry Up Tomorrow Era)",
+   cue:"Dawn FM-era track, dreamy synth textures.",
+   keyMoment:"Smooth verse flow into a melodic, catchy chorus hook.",
+   tags:["dawn fm"]},
+
+  {id:9, order:9, title:"São Paulo", artist:"The Weeknd, Anitta", priority:"nice", appearance:"both", section:"Bagian Pembuka (Hurry Up Tomorrow Era)",
+   cue:"Latin-tinged beat drop, shortened performance.",
+   keyMoment:"Blended with a quick instrumental sample of the 'Tokyo Drift' theme mixed into the beat — happens fast, don't blink.",
+   tags:["anitta","feature","sample"]},
+
+  {id:11, order:10, title:"Take My Breath", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Tengah (Dawn FM & Klasik)",
+   cue:"Disco-house four-on-the-floor groove kicks in.",
+   keyMoment:"Pulsing dance beat → big pre-chorus lift → euphoric chorus drop.",
+   tags:["disco","dance","hit"]},
+
+  {id:12, order:11, title:"Sacrifice", artist:"The Weeknd (Swedish House Mafia Remix)", priority:"should", appearance:"both", section:"Bagian Tengah (Dawn FM & Klasik)",
+   cue:"Performed as the Swedish House Mafia remix, mixed together with instrumental elements of 'Wanderlust'.",
+   keyMoment:"Filtered dance intro, original chorus hook riding the remix beat, blended with a 'Wanderlust' instrumental passage.",
+   tags:["swedish house mafia","remix","dance"]},
+
+  {id:13, order:12, title:"How Do I Make You Love Me?", artist:"The Weeknd", priority:"nice", appearance:"both", section:"Bagian Tengah (Dawn FM & Klasik)",
+   cue:"Groove-heavy uptempo cut, one of the newer tracks.",
+   keyMoment:"Funky bassline intro into a catchy, repeated chorus phrase.",
+   tags:["hurry up tomorrow","groove"]},
+
+  {id:15, order:13, title:"Can't Feel My Face", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Tengah (Dawn FM & Klasik)",
+   cue:"Huge crowd-pleaser, funky guitar-driven intro that's instantly recognizable.",
+   keyMoment:"Groovy intro → big anthemic chorus everyone sings → great jump-along energy.",
+   tags:["hit","funk","singalong"]},
+
+  {id:16, order:14, title:"Lost in the Fire", artist:"The Weeknd, Gesaffelstein", priority:"should", appearance:"both", section:"Bagian Tengah (Dawn FM & Klasik)",
+   cue:"Gesaffelstein collab cover — darker, industrial-electronic tone.",
+   keyMoment:"Moody synth intro → tense verse → heavier chorus hit.",
+   tags:["cover","gesaffelstein","dark"]},
+
+  {id:18, order:15, title:"Often", artist:"The Weeknd", priority:"should", appearance:"both", section:"Bagian Tengah (Dawn FM & Klasik)",
+   cue:"Trilogy/Kiss Land-era classic, dark seductive bassline.",
+   keyMoment:"Sparse intro → steady half-time groove → repeated chorus hook.",
+   tags:["classic","bassline"]},
+
+  {id:19, order:16, title:"Given Up on Me", artist:"The Weeknd", priority:"should", appearance:"both", section:"Bagian Tengah (Dawn FM & Klasik)",
+   cue:"Opens with an extended sample intro before the beat drops.",
+   keyMoment:"Long atmospheric sample intro → beat switch into the verse → emotional chorus.",
+   tags:["hurry up tomorrow","sample intro"]},
+
+  {id:20, order:17, title:"I Was Never There", artist:"The Weeknd", priority:"nice", appearance:"both", section:"Bagian Tengah (Dawn FM & Klasik)",
+   cue:"Dawn FM deep cut, hazy and reverb-heavy.",
+   keyMoment:"Distorted vocal intro → dreamy verse → glitchy instrumental break.",
+   tags:["dawn fm","deep cut"]},
+
+  {id:21, order:18, title:"The Hills", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Tengah (Dawn FM & Klasik)",
+   cue:"One of his biggest hits, dark siren-like intro.",
+   keyMoment:"Iconic intro hook → verses → massive chanted chorus. One of the loudest singalongs of the night.",
+   tags:["hit","iconic","singalong"]},
+
+  {id:22, order:19, title:"Timeless", artist:"The Weeknd, Playboi Carti", priority:"must", appearance:"both", section:"Bagian Hits & Kolaborasi",
+   cue:"Playboi Carti collab, high-energy hip-hop beat switch.",
+   keyMoment:"Hard beat drop → rapid-fire verse energy → big hook. Expect the crowd to go wild here.",
+   tags:["playboi carti","hip hop","hype"]},
+
+  {id:24, order:20, title:"Creepin'", artist:"The Weeknd, Metro Boomin, 21 Savage", priority:"should", appearance:"both", section:"Bagian Hits & Kolaborasi",
+   cue:"Metro Boomin collab cover, moody trap-soul groove.",
+   keyMoment:"Smooth bassline intro → falsetto-heavy verse → soulful chorus hook.",
+   tags:["cover","metro boomin","trap soul"]},
+
+  {id:25, order:21, title:"One of the Girls", artist:"The Weeknd, JENNIE, Lily-Rose Depp", priority:"nice", appearance:"both", section:"Bagian Hits & Kolaborasi",
+   cue:"Falsetto-driven, moody pop ballad energy.",
+   keyMoment:"Airy falsetto intro → steady groove verse. The outro interpolates a bit of 'What You Need' near the end — listen for the shift in feel.",
+   tags:["jennie","the idol","falsetto"]},
+
+  {id:27, order:22, title:"Out of Time", artist:"The Weeknd", priority:"should", appearance:"both", section:"Bagian Hits & Kolaborasi",
+   cue:"City Pop-influenced groove, retro Japanese-inspired sound.",
+   keyMoment:"Bright, nostalgic intro groove → smooth verse → uplifting chorus.",
+   tags:["dawn fm","city pop"]},
+
+  {id:28, order:23, title:"I Feel It Coming", artist:"The Weeknd, Daft Punk", priority:"should", appearance:"both", section:"Bagian Hits & Kolaborasi",
+   cue:"Daft Punk collab feel, smooth retro-funk groove.",
+   keyMoment:"Groovy synth intro → laid-back verse → warm melodic chorus.",
+   tags:["daft punk","funk"]},
+
+  {id:29, order:24, title:"Die For You", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Hits & Kolaborasi",
+   cue:"One of his most-streamed songs, ballad-to-groove build.",
+   keyMoment:"Soft intro → building pre-chorus → soaring, widely-known chorus. Huge singalong expected.",
+   tags:["hit","singalong","streaming smash"]},
+
+  {id:30, order:25, title:"Is There Someone Else?", artist:"The Weeknd", priority:"should", appearance:"both", section:"Bagian Hits & Kolaborasi",
+   cue:"Slow-burning falsetto ballad moment.",
+   keyMoment:"Delicate intro → emotional falsetto verse → quiet, intimate chorus.",
+   tags:["ballad","falsetto","after hours"]},
+
+  {id:31, order:26, title:"Wicked Games", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Hits & Kolaborasi",
+   cue:"Trilogy-era fan favorite, intense and raw energy.",
+   keyMoment:"Dark intro → intense building verse → explosive, widely-known chorus. A big classic singalong.",
+   tags:["classic","trilogy","singalong"]},
+
+  {id:32, order:27, title:"Call Out My Name", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Hits & Kolaborasi",
+   cue:"Emotional peak of the night — stripped-back build into a huge finish.",
+   keyMoment:"Soft, acoustic-tinged intro → slow emotional build → powerful climactic outro.",
+   tags:["ballad","emotional peak","starboy era"]},
+
+  {id:33, order:28, title:"The Abyss", artist:"The Weeknd", priority:"nice", appearance:"both", section:"Bagian Penutup & Encore",
+   cue:"Newer, atmospheric Hurry Up Tomorrow-era track.",
+   keyMoment:"Slow cinematic intro → moody verse → spacious outro.",
+   tags:["hurry up tomorrow","atmospheric"]},
+
+  {id:34, order:29, title:"Professional", artist:"The Weeknd", priority:"nice", appearance:"both", section:"Bagian Penutup & Encore",
+   cue:"Short tape moment used purely as a transition into the next song.",
+   keyMoment:"Brief instrumental/vocal snippet, not a full performance — leads straight into 'Save Your Tears'.",
+   tags:["transition","tape"]},
+
+  {id:35, order:30, title:"Save Your Tears", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Penutup & Encore",
+   cue:"Massive radio hit, bright 80s-pop synth intro.",
+   keyMoment:"Instantly recognizable synth riff → upbeat verse → huge singalong chorus.",
+   tags:["hit","singalong","80s"]},
+
+  {id:36, order:31, title:"Less Than Zero", artist:"The Weeknd", priority:"should", appearance:"both", section:"Bagian Penutup & Encore",
+   cue:"Dawn FM-style track, dreamy and hooky.",
+   keyMoment:"Warm synth intro into a catchy, repeated chorus phrase.",
+   tags:["dawn fm"]},
+
+  {id:37, order:32, title:"Blinding Lights", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Penutup & Encore",
+   cue:"The biggest hit of the night — unmistakable synth riff from the very first note.",
+   keyMoment:"That synth riff hits immediately. Full-crowd singalong from note one through the last chorus — save your energy for this one.",
+   tags:["biggest hit","singalong","80s","must see"]},
+
+  {id:38, order:33, title:"Adaptation", artist:"The Weeknd", priority:"should", appearance:"both", section:"Bagian Penutup & Encore",
+   cue:"Main set closer, right before the encore break.",
+   keyMoment:"Builds steadily to a big finish — signals the main set is ending, encore break follows.",
+   tags:["set closer","hurry up tomorrow"]},
+
+  {id:39, order:34, title:"House of Balloons", artist:"The Weeknd", priority:"must", appearance:"both", section:"Bagian Penutup & Encore",
+   cue:"Encore opener — dark Trilogy-era classic.",
+   keyMoment:"Moody intro reopens the night after the break, into a steady groove with a memorable repeated hook.",
+   tags:["encore","trilogy","classic"]},
+
+  {id:40, order:35, title:"Moth to a Flame", artist:"The Weeknd (Swedish House Mafia Cover)", priority:"should", appearance:"both", section:"Bagian Penutup & Encore",
+   cue:"Swedish House Mafia collab cover — the show closer.",
+   keyMoment:"Building dance-floor energy → big final drop. The last moment of the night — arms up.",
+   tags:["encore","swedish house mafia","closer","cover"]},
+];
+
+const PRIORITY_LABEL = {must:"🔥 MUST KNOW", should:"🟡 SHOULD KNOW", nice:"⚪ NICE TO KNOW"};
+const PRIORITY_TAG_CLASS = {must:"must", should:"should", nice:"nice"};
+const STATUS_ORDER = ["notplayed","played"];
+const STATUS_LABEL = {notplayed:"⚪ Belum Diputar", played:"✓ Sudah Diputar"};
+
+const STORAGE_KEY = "tw_jkt_status_v1";
+const NOTES_KEY = "tw_jkt_notes_v1";
+
+/* Baked-in defaults, rewritten only by the "Simpan ke File" export below.
+   On a fresh device (empty localStorage) these are what shows up first. */
+const EMBEDDED_STATUS = {};
+const EMBEDDED_NOTES = {};
+
+/* ---------------- STATUS (localStorage) ---------------- */
+function loadStatus(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+let statusMap = Object.assign({}, EMBEDDED_STATUS, loadStatus());
+function saveStatus(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(statusMap)); }catch(e){}
+}
+function getStatus(id){ return statusMap[id] || "notplayed"; }
+function cycleStatus(id){
+  const cur = getStatus(id);
+  const idx = STATUS_ORDER.indexOf(cur);
+  const next = STATUS_ORDER[(idx+1) % STATUS_ORDER.length];
+  statusMap[id] = next;
+  saveStatus();
+}
+
+/* ---------------- PERSONAL NOTES / LYRICS (localStorage, per device) ---------------- */
+function loadNotes(){
+  try{
+    const raw = localStorage.getItem(NOTES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+let notesMap = Object.assign({}, EMBEDDED_NOTES, loadNotes());
+function saveNotes(){
+  try{ localStorage.setItem(NOTES_KEY, JSON.stringify(notesMap)); }catch(e){}
+}
+function getNote(id){ return notesMap[id] || ""; }
+function setNote(id, text){
+  notesMap[id] = text;
+  saveNotes();
+}
+function lyricsSearchUrl(song){
+  return "https://www.google.com/search?q=" + encodeURIComponent(song.title + " " + song.artist + " lyrics");
+}
+
+/* ---------------- STATE ---------------- */
+let state = {
+  search: "",
+  filter: "all",
+};
+
+/* ---------------- FILTER / SEARCH ---------------- */
+function matchesSearch(song, q){
+  if(!q) return true;
+  q = q.toLowerCase();
+  const priorityText = PRIORITY_LABEL[song.priority].toLowerCase();
+  const hay = [
+    song.title, song.artist, song.cue, song.keyMoment,
+    priorityText, song.priority,
+    (song.tags||[]).join(" ")
+  ].join(" ").toLowerCase();
+  return hay.indexOf(q) !== -1;
+}
+function matchesFilter(song, filter){
+  if(filter === "all") return true;
+  if(filter === "played") return getStatus(song.id) === "played";
+  return song.priority === filter;
+}
+function getFilteredSongs(){
+  return SONGS.filter(s => matchesFilter(s, state.filter) && matchesSearch(s, state.search));
+}
+
+function escapeHtml(str){
+  const d = document.createElement("div");
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+/* ---------------- RENDER: LIST ---------------- */
+const listEl = document.getElementById("list");
+
+function renderList(){
+  const songs = getFilteredSongs();
+  if(songs.length === 0){
+    listEl.innerHTML = '<div class="empty-state">No songs match. All songs are still here — try a different search or filter.</div>';
+    return;
+  }
+  let lastSection = null;
+  listEl.innerHTML = songs.map(song => {
+    const st = getStatus(song.id);
+    let header = "";
+    if(song.section && song.section !== lastSection){
+      header = `<div class="section-header">${escapeHtml(song.section)}</div>`;
+      lastSection = song.section;
+    }
+    return `
+    ${header}
+    <div class="song-row" data-id="${song.id}">
+      <div class="num">${String(song.order).padStart(2,"0")}</div>
+      <div class="info">
+        <div class="title">${escapeHtml(song.title)}</div>
+        <div class="meta">${escapeHtml(song.artist)}</div>
+      </div>
+      <div class="badges">
+        <span class="tag ${PRIORITY_TAG_CLASS[song.priority]}">${PRIORITY_LABEL[song.priority]}</span>
+        <button class="status-btn" data-status-id="${song.id}">${STATUS_LABEL[st]}</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+listEl.addEventListener("click", function(e){
+  const statusBtn = e.target.closest("[data-status-id]");
+  if(statusBtn){
+    cycleStatus(Number(statusBtn.dataset.statusId));
+    renderList();
+    return;
+  }
+  const row = e.target.closest(".song-row");
+  if(row){
+    openPlayer(Number(row.dataset.id));
+  }
+});
+
+/* ---------------- SEARCH / FILTER EVENTS ---------------- */
+document.getElementById("search").addEventListener("input", function(e){
+  state.search = e.target.value;
+  renderList();
+});
+document.getElementById("filters").addEventListener("click", function(e){
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+  chip.classList.add("active");
+  state.filter = chip.dataset.filter;
+  renderList();
+});
+
+/* ---------------- EXPORT: bake current notes/status into a fresh index.html ---------------- */
+document.getElementById("exportBtn").addEventListener("click", function(){
+  closePlayer();
+  document.getElementById("search").value = "";
+  state.search = "";
+  document.querySelectorAll(".filters .chip").forEach(c => c.classList.remove("active"));
+  document.querySelector('.filters .chip[data-filter="all"]').classList.add("active");
+  state.filter = "all";
+  renderList();
+
+  let html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+  html = html.replace("const EMBEDDED_STATUS = {};", "const EMBEDDED_STATUS = " + JSON.stringify(statusMap) + ";");
+  html = html.replace("const EMBEDDED_NOTES = {};", "const EMBEDDED_NOTES = " + JSON.stringify(notesMap) + ";");
+  html = html.replace(/<\/script/gi, "<\\/script");
+
+  const blob = new Blob([html], {type: "text/html"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "index.html";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  alert("File baru sudah didownload. Ganti file lama dengan yang ini sebelum dipindah ke HP — liriknya udah ikut kebawa.");
+});
+
+/* =====================================================
+   FULLSCREEN LYRICS PLAYER
+   The only way to open a song. Tap a row -> straight here.
+   Next/Previous walks the currently filtered/searched list.
+   Back returns to the search/list screen.
+===================================================== */
+const overlay = document.getElementById("overlay");
+const ovBody = document.getElementById("ovBody");
+const ovOrder = document.getElementById("ovOrder");
+const ovTitle = document.getElementById("ovTitle");
+const ovArtist = document.getElementById("ovArtist");
+const ovWakeNote = document.getElementById("ovWakeNote");
+let ovList = [];
+let ovIndex = 0;
+let ovEditing = false;
+let wakeLock = null;
+
+function openPlayer(startId){
+  ovList = getFilteredSongs();
+  if(ovList.length === 0) ovList = SONGS.slice();
+  let startIdx = 0;
+  const found = ovList.findIndex(s => s.id === startId);
+  if(found !== -1) startIdx = found;
+  ovIndex = startIdx;
+  ovEditing = false;
+  overlay.style.display = "flex";
+  requestWakeLock();
+  tryFullscreen();
+  renderPlayer();
+}
+function closePlayer(){
+  overlay.style.display = "none";
+  releaseWakeLock();
+  exitFullscreen();
+}
+function renderPlayer(){
+  const song = ovList[ovIndex];
+  ovOrder.textContent = String(song.order).padStart(2,"0") + " / " + SONGS.length;
+  ovTitle.textContent = song.title;
+  ovArtist.textContent = song.artist;
+
+  if(ovEditing){
+    ovBody.innerHTML = `
+      <textarea class="ov-lyrics-edit" id="ovLyricsEdit" placeholder="Tempel atau ketik lirik kamu di sini...">${escapeHtml(getNote(song.id))}</textarea>
+      <a class="ov-edit-link" href="${lyricsSearchUrl(song)}" target="_blank" rel="noopener noreferrer">🔎 Cari lirik lagu ini (butuh internet)</a>
+    `;
+    const ta = document.getElementById("ovLyricsEdit");
+    ta.addEventListener("input", function(e){ setNote(song.id, e.target.value); });
+    ta.focus();
+  } else {
+    const st = getStatus(song.id);
+    const note = getNote(song.id);
+    const lyricsBlock = note
+      ? `<div class="ov-lyrics"><p>${escapeHtml(note)}</p></div>`
+      : `<div class="ov-lyrics empty"><p>Belum ada lirik.\nTap ✏️ di atas buat nulis/tempel lirik lagu ini.</p></div>`;
+    ovBody.innerHTML = `
+      <button class="ov-status" id="ovStatusBtn">${STATUS_LABEL[st]}</button>
+      ${lyricsBlock}
+    `;
+    document.getElementById("ovStatusBtn").onclick = function(){
+      cycleStatus(song.id);
+      renderPlayer();
+    };
+  }
+
+  document.getElementById("ovPrev").disabled = ovIndex <= 0;
+  document.getElementById("ovNext").disabled = ovIndex >= ovList.length - 1;
+}
+function ovNextSong(){
+  if(ovIndex < ovList.length - 1){ ovIndex++; ovEditing = false; renderPlayer(); }
+}
+function ovPrevSong(){
+  if(ovIndex > 0){ ovIndex--; ovEditing = false; renderPlayer(); }
+}
+
+document.getElementById("ovClose").addEventListener("click", closePlayer);
+document.getElementById("ovEditBtn").addEventListener("click", function(){
+  ovEditing = !ovEditing;
+  renderPlayer();
+});
+document.getElementById("ovPrev").addEventListener("click", ovPrevSong);
+document.getElementById("ovNext").addEventListener("click", ovNextSong);
+
+/* swipe gestures (ignored while editing, so text selection isn't hijacked) */
+let touchStartX = null, touchStartY = null;
+overlay.addEventListener("touchstart", function(e){
+  if(ovEditing) return;
+  const t = e.changedTouches[0];
+  touchStartX = t.clientX; touchStartY = t.clientY;
+}, {passive:true});
+overlay.addEventListener("touchend", function(e){
+  if(ovEditing || touchStartX === null) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+  if(Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5){
+    if(dx < 0) ovNextSong(); else ovPrevSong();
+  }
+  touchStartX = null; touchStartY = null;
+}, {passive:true});
+
+/* Wake Lock API with fallback note */
+async function requestWakeLock(){
+  try{
+    if("wakeLock" in navigator){
+      wakeLock = await navigator.wakeLock.request("screen");
+      ovWakeNote.textContent = "";
+      wakeLock.addEventListener("release", function(){ wakeLock = null; });
+    } else {
+      ovWakeNote.textContent = "💡 Screen may auto-lock — disable auto-lock in phone settings for this show.";
+    }
+  }catch(err){
+    ovWakeNote.textContent = "💡 Screen may auto-lock — disable auto-lock in phone settings for this show.";
+  }
+}
+function releaseWakeLock(){
+  if(wakeLock){
+    wakeLock.release().catch(function(){});
+    wakeLock = null;
+  }
+}
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState === "visible" && overlay.style.display === "flex" && !wakeLock){
+    requestWakeLock();
+  }
+});
+
+/* Fullscreen (best-effort, silently ignored if unsupported) */
+function tryFullscreen(){
+  try{
+    const el = document.documentElement;
+    if(el.requestFullscreen) el.requestFullscreen().catch(function(){});
+  }catch(e){}
+}
+function exitFullscreen(){
+  try{
+    if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function(){});
+  }catch(e){}
+}
+
+/* initial render */
+renderList();
+
+})();
+</script>
+</body>
+</html>
